@@ -1,2 +1,2 @@
 # RedTeamInternal-Script
-Network automation (listahan ng mga kapaki-pakinabang na script)
+Network automation (list of offensive Collection Anti-EDR and Disabler toolkit)
