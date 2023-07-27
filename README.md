@@ -1,2 +1,2 @@
 # RedTeamInternal-Script
-Network automation (list of offensive Collection Anti-EDR and Disabler toolkit and More)
+Network automation (list of offensive Collection Anti-EDR / Disabler toolkit and More)
