@@ -1,10 +1,10 @@
 # Red Team Manual
- ### RED TEAM INTERNAL PENTEST MANUAL (Collections of Offensive Anti-EDR / Disabler toolkit and More)
-### Enumeration
+
+## Enumeration
 
 ### Credential Injection
 ```
-runas.exe /netonly /user:<domain>\<username> cmd.exe```
+runas.exe /netonly /user:<domain>\<username> cmd.exe
 ```
 ### User Enumeration
 ```
