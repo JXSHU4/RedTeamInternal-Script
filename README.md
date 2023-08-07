@@ -1,6 +1,5 @@
 # Red Team Manual
-Network Automation (Collections of Offensive Anti-EDR / Disabler toolkit and More)
-
+ ## RED TEAM INTERNAL PENTEST MANUAL (Collections of Offensive Anti-EDR / Disabler toolkit and More)
 # Enumeration
 
 # Credential Injection
